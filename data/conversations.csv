@@ -1,0 +1,11 @@
+session_id,turn_id,user_input,bot_response
+S001,1,"I am very stressed about my exams","It sounds like your exams are causing a lot of stress. Let's take things one step at a time."
+S001,2,"I cannot sleep properly","Lack of sleep can make stress feel even harder. You could try a simple relaxation technique."
+S001,3,"I am scared that I will fail","It is understandable to feel worried about failure. Your result does not define your entire future."
+S002,1,"I feel very lonely today","I'm sorry you're feeling lonely. Talking about what you're experiencing may help."
+S002,2,"Nobody understands me","Feeling misunderstood can be painful. You deserve to have someone listen to you."
+S003,1,"I am worried about getting a job","Career uncertainty can feel stressful. Breaking your goals into smaller steps may make things more manageable."
+S003,2,"I think I will fail","It is understandable to worry about failure. Let's focus on what you can control right now."
+S004,1,"I am having trouble sleeping","Sleep problems can affect how we feel during the day. A regular bedtime routine may help."
+S004,2,"I feel tired all the time","Feeling tired can be difficult. It may help to pay attention to your sleep routine and daily stress."
+S005,1,"My family is putting pressure on me","Family pressure can feel overwhelming. It may help to identify what you can control and communicate your feelings."
