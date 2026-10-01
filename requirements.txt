@@ -1,0 +1,5 @@
+cohere
+flask
+python-dotenv
+textblob
+pyspark

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Mental Health Coach</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#e8f5e9,#e3f2fd);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px}
+
+    /* ── Top nav ── */
+    .topbar{width:100%;max-width:1200px;background:linear-gradient(135deg,#43a047,#1e88e5);border-radius:16px;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .topbar h1{color:#fff;font-size:1.3rem}
+    .topbar p{color:rgba(255,255,255,.85);font-size:.8rem}
+    .tabs{display:flex;gap:8px}
+    .tab{background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:20px;padding:7px 18px;cursor:pointer;font-size:.85rem;transition:background .2s}
+    .tab.active,.tab:hover{background:rgba(255,255,255,.4)}
+
+    /* ── Pages ── */
+    .page{display:none;width:100%;max-width:1200px}
+    .page.active{display:flex;gap:14px}
+
+    /* ── Chat page ── */
+    .chat-sidebar{width:270px;flex-shrink:0;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:18px;display:flex;flex-direction:column;gap:18px;overflow-y:auto;max-height:82vh}
+    .chat-main{flex:1;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:flex;flex-direction:column;overflow:hidden;max-height:82vh}
+    .section-title{font-size:.85rem;font-weight:700;color:#2e7d32;border-bottom:2px solid #c8e6c9;padding-bottom:6px;margin-bottom:8px}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat-card{background:#f1f8e9;border-radius:10px;padding:10px;text-align:center}
+    .stat-card .num{font-size:1.5rem;font-weight:700;color:#1e88e5}
+    .stat-card .lbl{font-size:.68rem;color:#666;margin-top:2px}
+    .emotion-row{display:flex;align-items:center;gap:6px;font-size:.78rem;margin-bottom:6px}
+    .bar-wrap{flex:1;background:#e0e0e0;border-radius:4px;height:7px;overflow:hidden}
+    .bar{height:100%;background:linear-gradient(90deg,#43a047,#1e88e5);border-radius:4px;transition:width .5s}
+    .cnt{font-size:.72rem;color:#888;min-width:16px;text-align:right}
+    #chat-window{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+    .msg-group{display:flex;flex-direction:column;gap:3px}
+    .msg-group.user{align-items:flex-end}
+    .msg-group.bot{align-items:flex-start}
+    .bubble{max-width:75%;padding:11px 15px;border-radius:18px;font-size:.9rem;line-height:1.55;word-wrap:break-word}
+    .bubble.user{background:#1e88e5;color:#fff;border-bottom-right-radius:4px}
+    .bubble.bot{background:#f1f8e9;color:#2e7d32;border:1px solid #c8e6c9;border-bottom-left-radius:4px}
+    .bubble.typing{background:#f1f8e9;border:1px solid #c8e6c9;color:#999;font-style:italic}
+    .msg-meta{display:flex;gap:5px;padding:0 3px}
+    .tag{font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:600}
+    .tag.em{background:#e8f5e9;color:#2e7d32}
+    .tag.pos{background:#e3f2fd;color:#1565c0}
+    .tag.neg{background:#fce4ec;color:#c62828}
+    .tag.neu{background:#f5f5f5;color:#555}
+    .input-area{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #e0e0e0;background:#fafafa;align-items:flex-end}
+    #user-input{flex:1;padding:10px 15px;border:1.5px solid #c8e6c9;border-radius:22px;font-size:.9rem;outline:none;resize:none;font-family:inherit;max-height:100px;overflow-y:auto;transition:border-color .2s}
+    #user-input:focus{border-color:#43a047}
+    #send-btn{background:linear-gradient(135deg,#43a047,#1e88e5);color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:opacity .2s}
+    #send-btn:disabled{opacity:.5;cursor:not-allowed}
+    .disclaimer{text-align:center;font-size:.68rem;color:#bbb;padding:5px 0 8px;background:#fafafa}
+
+    /* ── Dashboard page ── */
+    #page-dashboard{flex-wrap:wrap;gap:14px}
+    .dash-card{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:20px}
+    .dash-card h3{font-size:.9rem;font-weight:700;color:#2e7d32;margin-bottom:14px;border-bottom:2px solid #c8e6c9;padding-bottom:6px}
+    .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%}
+    .kpi-box{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:18px;text-align:center}
+    .kpi-box .knum{font-size:1.8rem;font-weight:700;color:#1e88e5}
+    .kpi-box .klbl{font-size:.72rem;color:#666;margin-top:4px}
+    .pie-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    svg.pie{flex-shrink:0}
+    .legend{display:flex;flex-direction:column;gap:7px}
+    .legend-item{display:flex;align-items:center;gap:7px;font-size:.78rem}
+    .legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+    .bar-chart{display:flex;flex-direction:column;gap:10px}
+    .bc-row{display:flex;align-items:center;gap:8px;font-size:.78rem}
+    .bc-label{min-width:130px;text-align:right;color:#555}
+    .bc-bar-wrap{flex:1;background:#e0e0e0;border-radius:4px;height:18px;overflow:hidden}
+    .bc-bar{height:100%;border-radius:4px;transition:width .6s}
+    .bc-val{min-width:40px;font-size:.72rem;color:#888}
+    .series-chart{display:flex;flex-direction:column;gap:8px}
+    .sc-row{display:flex;align-items:center;gap:8px;font-size:.78rem}
+    .sc-label{min-width:50px;color:#555}
+    .sc-bar-wrap{flex:1;background:#e0e0e0;border-radius:4px;height:14px;overflow:hidden;position:relative}
+    .sc-bar-pos{height:100%;background:#43a047;border-radius:4px;transition:width .5s}
+    .sc-bar-neg{height:100%;background:#e53935;border-radius:4px;transition:width .5s}
+    .sc-val{min-width:44px;font-size:.72rem;color:#888}
+
+    /* ── Review page ── */
+    #page-review{flex-direction:column}
+    .review-layout{display:flex;gap:14px;width:100%}
+    .review-left{width:260px;flex-shrink:0;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:18px}
+    .review-right{flex:1;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:18px;overflow-y:auto;max-height:75vh}
+    .session-btn{display:block;width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border:1.5px solid #c8e6c9;border-radius:10px;background:#f9fbe7;cursor:pointer;font-size:.85rem;transition:background .2s}
+    .session-btn:hover,.session-btn.active{background:#c8e6c9}
+    .turn-card{border:1px solid #e0e0e0;border-radius:12px;padding:14px;margin-bottom:12px}
+    .turn-card .turn-header{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+    .turn-label{font-size:.72rem;font-weight:700;color:#1e88e5}
+    .turn-card .user-msg{background:#e3f2fd;border-radius:8px;padding:8px 12px;font-size:.83rem;color:#1565c0;margin-bottom:6px}
+    .turn-card .bot-msg{background:#f1f8e9;border-radius:8px;padding:8px 12px;font-size:.83rem;color:#2e7d32;margin-bottom:6px}
+    .turn-card .ai-msg{background:#fff8e1;border-radius:8px;padding:8px 12px;font-size:.83rem;color:#e65100;margin-bottom:8px}
+    .msg-lbl{font-size:.65rem;font-weight:700;color:#999;margin-bottom:2px}
+    .rating-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .stars{display:flex;gap:4px}
+    .star{font-size:1.3rem;cursor:pointer;color:#ddd;transition:color .15s}
+    .star.active{color:#fbc02d}
+    .notes-input{flex:1;min-width:120px;padding:6px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:.8rem;outline:none;font-family:inherit}
+    .save-btn{background:linear-gradient(135deg,#43a047,#1e88e5);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;cursor:pointer}
+    .save-btn:hover{opacity:.9}
+    .saved-badge{font-size:.72rem;color:#43a047;font-weight:700}
+
+    @media(max-width:700px){
+      .page.active{flex-direction:column}
+      .chat-sidebar,.review-left{width:100%}
+      .kpi-grid{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div>
+    <h1>🧠 AI Mental Health Coach</h1>
+    <p>ETL · Cohere AI · Professional Review · Dashboard</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('chat')">💬 Chat</button>
+    <button class="tab" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="switchTab('review')">🩺 Review</button>
+  </div>
+</div>
+
+<!-- KPI strip (always visible) -->
+<div style="width:100%;max-width:1200px;margin-bottom:14px">
+  <div class="kpi-grid" id="kpi-strip">
+    <div class="kpi-box"><div class="knum" id="k-sessions">—</div><div class="klbl">Total Sessions</div></div>
+    <div class="kpi-box"><div class="knum" id="k-turns">—</div><div class="klbl">Total Turns</div></div>
+    <div class="kpi-box"><div class="knum" id="k-avg-turns">—</div><div class="klbl">Avg Turns/Session</div></div>
+    <div class="kpi-box"><div class="knum" id="k-avg-len">—</div><div class="klbl">Avg Response Length</div></div>
+    <div class="kpi-box"><div class="knum" id="k-sentiment">—</div><div class="klbl">Overall Sentiment</div></div>
+  </div>
+</div>
+
+<!-- ── CHAT PAGE ── -->
+<div class="page active" id="page-chat">
+  <aside class="chat-sidebar">
+    <div>
+      <div class="section-title">🧩 Emotion Breakdown</div>
+      <div id="sidebar-emotions">Loading...</div>
+    </div>
+    <div>
+      <div class="section-title">📈 Avg Sentiment by Emotion</div>
+      <div id="sidebar-sent">Loading...</div>
+    </div>
+  </aside>
+
+  <div class="chat-main">
+    <div id="chat-window">
+      <div class="msg-group bot">
+        <div class="bubble bot">Hi there 👋 I'm here to listen and support you. How are you feeling today?</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea id="user-input" rows="1" placeholder="How are you feeling today?"></textarea>
+      <button id="send-btn">&#10148;</button>
+    </div>
+    <div class="disclaimer">Not a substitute for professional mental health care.</div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD PAGE ── -->
+<div class="page" id="page-dashboard">
+  <!-- Pie chart -->
+  <div class="dash-card" style="flex:1;min-width:280px">
+    <h3>🥧 Emotion Distribution</h3>
+    <div class="pie-wrap">
+      <svg class="pie" id="pie-svg" width="160" height="160" viewBox="0 0 160 160"></svg>
+      <div class="legend" id="pie-legend"></div>
+    </div>
+  </div>
+
+  <!-- Sentiment time-series -->
+  <div class="dash-card" style="flex:1;min-width:280px">
+    <h3>📉 Avg Sentiment per Session</h3>
+    <div class="series-chart" id="series-chart">Loading...</div>
+  </div>
+
+  <!-- Avg sentiment by emotion bar chart -->
+  <div class="dash-card" style="width:100%">
+    <h3>🎭 Avg Sentiment Score by Emotion</h3>
+    <div class="bar-chart" id="sent-bar-chart">Loading...</div>
+  </div>
+</div>
+
+<!-- ── REVIEW PAGE ── -->
+<div class="page" id="page-review">
+  <div class="review-layout">
+    <div class="review-left">
+      <div class="section-title">🗂 Sessions</div>
+      <div id="session-list">Loading...</div>
+    </div>
+    <div class="review-right" id="review-panel">
+      <p style="color:#aaa;font-size:.85rem">Select a session to review conversations.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const COLORS = ['#43a047','#1e88e5','#e53935','#fb8c00','#8e24aa','#00acc1'];
+
+function sentTag(s) {
+  s = parseFloat(s);
+  if (s > 0.05)  return `<span class="tag pos">😊 ${s}</span>`;
+  if (s < -0.05) return `<span class="tag neg">😔 ${s}</span>`;
+  return `<span class="tag neu">😐 ${s}</span>`;
+}
+
+// ── Load dashboard data ───────────────────────────────────────────────────────
+async function loadDashboard() {
+  const res  = await fetch('/dashboard');
+  const data = await res.json();
+
+  // KPI strip
+  document.getElementById('k-sessions').textContent  = data.kpi.total_sessions;
+  document.getElementById('k-turns').textContent     = data.kpi.total_turns;
+  document.getElementById('k-avg-turns').textContent = data.kpi.avg_turns_session;
+  document.getElementById('k-avg-len').textContent   = data.kpi.avg_response_len;
+  const os = data.kpi.overall_sentiment;
+  document.getElementById('k-sentiment').textContent = os;
+  document.getElementById('k-sentiment').style.color = os > 0.05 ? '#43a047' : os < -0.05 ? '#e53935' : '#fb8c00';
+
+  // ── Sidebar emotion bars ──
+  const ec  = data.emotion_distribution;
+  const max = Math.max(...Object.values(ec));
+  const sel = document.getElementById('sidebar-emotions');
+  sel.innerHTML = '';
+  Object.entries(ec).sort((a,b)=>b[1]-a[1]).forEach(([em,cnt])=>{
+    const pct = Math.round(cnt/max*100);
+    sel.innerHTML += `<div class="emotion-row">
+      <span style="min-width:105px">${em}</span>
+      <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+      <span class="cnt">${cnt}</span></div>`;
+  });
+
+  // ── Sidebar avg sentiment by emotion ──
+  const ase = data.avg_sentiment_by_emotion;
+  const ss  = document.getElementById('sidebar-sent');
+  ss.innerHTML = '';
+  Object.entries(ase).forEach(([em,val])=>{
+    const cls = val>0.05?'pos':val<-0.05?'neg':'neu';
+    ss.innerHTML += `<div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:5px">
+      <span>${em}</span><span class="tag ${cls}">${val}</span></div>`;
+  });
+
+  // ── Pie chart ──
+  const entries = Object.entries(ec);
+  const total   = entries.reduce((s,[,v])=>s+v,0);
+  let angle = 0;
+  const svg = document.getElementById('pie-svg');
+  const leg = document.getElementById('pie-legend');
+  svg.innerHTML = ''; leg.innerHTML = '';
+  entries.forEach(([em,cnt],i) => {
+    const slice = cnt/total * 2 * Math.PI;
+    const x1 = 80 + 75*Math.cos(angle), y1 = 80 + 75*Math.sin(angle);
+    const x2 = 80 + 75*Math.cos(angle+slice), y2 = 80 + 75*Math.sin(angle+slice);
+    const large = slice > Math.PI ? 1 : 0;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M80,80 L${x1},${y1} A75,75 0 ${large},1 ${x2},${y2} Z`);
+    path.setAttribute('fill', COLORS[i % COLORS.length]);
+    path.setAttribute('stroke','#fff'); path.setAttribute('stroke-width','2');
+    svg.appendChild(path);
+    leg.innerHTML += `<div class="legend-item">
+      <div class="legend-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+      <span>${em} (${cnt})</span></div>`;
+    angle += slice;
+  });
+
+  // ── Sentiment series ──
+  const sc   = document.getElementById('series-chart');
+  const ss2  = data.sentiment_series;
+  const absMax = Math.max(...ss2.map(s=>Math.abs(s.avg_sentiment)), 0.01);
+  sc.innerHTML = '';
+  ss2.forEach(s => {
+    const val = s.avg_sentiment;
+    const pct = Math.round(Math.abs(val)/absMax*100);
+    const cls = val >= 0 ? 'sc-bar-pos' : 'sc-bar-neg';
+    sc.innerHTML += `<div class="sc-row">
+      <span class="sc-label">${s.session}</span>
+      <div class="sc-bar-wrap"><div class="${cls}" style="width:${pct}%"></div></div>
+      <span class="sc-val">${val}</span></div>`;
+  });
+
+  // ── Avg sentiment by emotion bar chart ──
+  const bc    = document.getElementById('sent-bar-chart');
+  const amax  = Math.max(...Object.values(ase).map(Math.abs), 0.01);
+  bc.innerHTML = '';
+  Object.entries(ase).sort((a,b)=>b[1]-a[1]).forEach(([em,val])=>{
+    const pct = Math.round(Math.abs(val)/amax*100);
+    const col = val>0.05?'#43a047':val<-0.05?'#e53935':'#fb8c00';
+    bc.innerHTML += `<div class="bc-row">
+      <span class="bc-label">${em}</span>
+      <div class="bc-bar-wrap"><div class="bc-bar" style="width:${pct}%;background:${col}"></div></div>
+      <span class="bc-val">${val}</span></div>`;
+  });
+}
+
+// ── Load review sessions ──────────────────────────────────────────────────────
+async function loadSessions() {
+  const res  = await fetch('/sessions');
+  const data = await res.json();
+  const sl   = document.getElementById('session-list');
+  sl.innerHTML = '';
+  Object.keys(data).forEach(sid => {
+    const btn = document.createElement('button');
+    btn.className   = 'session-btn';
+    btn.textContent = `📁 ${sid} (${data[sid].length} turns)`;
+    btn.onclick = () => {
+      document.querySelectorAll('.session-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderReview(sid, data[sid]);
+    };
+    sl.appendChild(btn);
+  });
+}
+
+function renderReview(sid, turns) {
+  const panel = document.getElementById('review-panel');
+  panel.innerHTML = `<div class="section-title" style="margin-bottom:12px">Session ${sid}</div>`;
+
+  turns.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'turn-card';
+    card.innerHTML = `
+      <div class="turn-header">
+        <span class="turn-label">Turn ${t.turn_id}</span>
+        <span class="tag em">${t.emotion}</span>
+        ${sentTag(t.sentiment)}
+        <span class="tag neu">📏 ${t.length_of_response} chars</span>
+      </div>
+      <div class="msg-lbl">USER</div>
+      <div class="user-msg">${t.user_input}</div>
+      <div class="msg-lbl">BOT (ETL)</div>
+      <div class="bot-msg">${t.bot_response}</div>
+      <div class="msg-lbl">AI (Cohere)</div>
+      <div class="ai-msg">${t.ai_response}</div>
+      <div class="rating-row">
+        <div class="stars" id="stars-${sid}-${t.turn_id}">
+          ${[1,2,3,4,5].map(n=>`<span class="star" data-v="${n}" onclick="setRating('${sid}','${t.turn_id}',${n})">★</span>`).join('')}
+        </div>
+        <input class="notes-input" id="notes-${sid}-${t.turn_id}" placeholder="Notes for this turn..."/>
+        <button class="save-btn" onclick="saveRating('${sid}','${t.turn_id}')">Save</button>
+        <span class="saved-badge" id="badge-${sid}-${t.turn_id}" style="display:none">✔ Saved</span>
+      </div>`;
+    panel.appendChild(card);
+  });
+}
+
+function setRating(sid, tid, val) {
+  const stars = document.querySelectorAll(`#stars-${sid}-${tid} .star`);
+  stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.v) <= val));
+  document.getElementById(`stars-${sid}-${tid}`).dataset.rating = val;
+}
+
+async function saveRating(sid, tid) {
+  const rating = document.getElementById(`stars-${sid}-${tid}`).dataset.rating || 0;
+  const notes  = document.getElementById(`notes-${sid}-${tid}`).value;
+  await fetch('/review', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({session_id: sid, turn_id: tid, rating, notes})
+  });
+  const badge = document.getElementById(`badge-${sid}-${tid}`);
+  badge.style.display = 'inline';
+  setTimeout(() => badge.style.display = 'none', 2000);
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+const chatWindow = document.getElementById('chat-window');
+const userInput  = document.getElementById('user-input');
+const sendBtn    = document.getElementById('send-btn');
+
+function addMessage(text, role, emotion, sentiment) {
+  const g = document.createElement('div');
+  g.className = `msg-group ${role}`;
+  const b = document.createElement('div');
+  b.className = `bubble ${role}`;
+  b.textContent = text;
+  g.appendChild(b);
+  if (emotion) {
+    const m = document.createElement('div');
+    m.className = 'msg-meta';
+    m.innerHTML = `<span class="tag em">🏷 ${emotion}</span>${sentTag(sentiment)}`;
+    g.appendChild(m);
+  }
+  chatWindow.appendChild(g);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return g;
+}
+
+async function sendMessage() {
+  const msg = userInput.value.trim();
+  if (!msg) return;
+  addMessage(msg, 'user');
+  userInput.value = ''; userInput.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  const tg = document.createElement('div'); tg.className = 'msg-group bot';
+  const tb = document.createElement('div'); tb.className = 'bubble typing'; tb.textContent = 'Thinking...';
+  tg.appendChild(tb); chatWindow.appendChild(tg); chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  try {
+    const res  = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg})});
+    const data = await res.json();
+    tg.remove();
+    addMessage(data.response, 'bot', data.emotion, data.sentiment);
+  } catch { tg.remove(); addMessage('Something went wrong. Please try again.', 'bot'); }
+  finally  { sendBtn.disabled = false; userInput.focus(); }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} });
+userInput.addEventListener('input', () => { userInput.style.height='auto'; userInput.style.height=Math.min(userInput.scrollHeight,100)+'px'; });
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadDashboard();
+loadSessions();
+</script>
+</body>
+</html>
